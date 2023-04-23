@@ -533,7 +533,7 @@ class LoadImages:
                 
                 area = [0, 0, width, height]#添加区域用于书写文本
                 return path, im, im0, area, self.cap, s
-                #pass
+                
                 
             else:
                 hand_boxes = hand_boxes.cpu().numpy()
@@ -546,56 +546,57 @@ class LoadImages:
                 img_w = int(img_w)
                 img_h = int(img_h)
             
-
+                #根据打电话还是玩手机适当调节裁剪区域大小
                 if img_w >= 1.3*img_h:
-                    crop_image = im1[int(hand_boxes[1]):int(hand_boxes[3]),int(hand_boxes[0]):int(hand_boxes[2])]
+                    crop_image = im1[int(hand_boxes[1]):int(hand_boxes[3]),int(hand_boxes[0]):int(hand_boxes[2])]#原始裁剪区域
+                    
+                    ##调节裁剪区域
                     #crop_image = im1[int(hand_boxes[1]/1.2):int(hand_boxes[3]*1.12),int(hand_boxes[0]/1.3):int(hand_boxes[2]*1.2)]
                     #crop_image = im1[int(hand_boxes[1]/1.2):int(hand_boxes[3]*1.12),int(hand_boxes[0]/1.5):int(hand_boxes[2]*1.12)]
-                    #cv2.imwrite("./crop_imgs/hand_data_crop/" + img[:-4] + f"_{i}.jpg", crop_image)
-                    # cv2.rectangle(im1, (int(hand_boxes[0]/1.5), int(hand_boxes[1]/1.2)), (int(hand_boxes[2]*1.12), int(hand_boxes[3]*1.12)), (0, 255, 0), 2)
-                    # with open('./hand_data_boxes.txt', 'a') as f1:
-                    #     f1.write(imgpath[:-4]+f"_{i}"+' '+str(np.round(np.copy(hand_boxes[0])/1.5,2))+' '+str(np.round(np.copy(hand_boxes[1])/1.2,2))+' '+str(np.round(np.copy(hand_boxes[2])*1.12,2))+' '+str(np.round(np.copy(hand_boxes[3])*1.12,2))+'\n')#call_phone
-                    area = [int(hand_boxes[0]), int(hand_boxes[1]), int(hand_boxes[2]), int(hand_boxes[3])]
+
+                    ##保存图像
+                    # cv2.imwrite("./crop_imgs/hand_data_crop/" + img[:-4] + f"_{i}.jpg", crop_image)
+                    
+                    
+                    area = [int(hand_boxes[0]), int(hand_boxes[1]), int(hand_boxes[2]), int(hand_boxes[3])]#原始裁剪区域坐标x1 y1 x2 y2
                     #area = [int(hand_boxes[0]/1.3), int(hand_boxes[1]/1.2), int(hand_boxes[2]/1.2), int(hand_boxes[3]/1.12)]
                     #area = [int(hand_boxes[0]/1.5), int(hand_boxes[1]/1.2), int(hand_boxes[2]*1.12), int(hand_boxes[3]*1.12)]
-                    # cv2.imshow("im1",im1)
-                    # cv2.waitKey(0)
-                    # cv2.destroyAllWindows()
+                    
+                    
                 else:
-                    crop_image = im1[int(hand_boxes[1]):int(hand_boxes[3]),int(hand_boxes[0]):int(hand_boxes[2])]
+                    crop_image = im1[int(hand_boxes[1]):int(hand_boxes[3]),int(hand_boxes[0]):int(hand_boxes[2])]#原始裁剪区域
+
+                    ##调节裁剪区域
                     #crop_image = im1[int(hand_boxes[1]/1.12):int(hand_boxes[3]*1.12),int(hand_boxes[0]/1.2):int(hand_boxes[2]*1.12)]
-                    #rop_image = im1[int(hand_boxes[1]/1.2):int(hand_boxes[3]*1.12),int(hand_boxes[0]/1.2):int(hand_boxes[2]*1.12)]
+                    #crop_image = im1[int(hand_boxes[1]/1.2):int(hand_boxes[3]*1.12),int(hand_boxes[0]/1.2):int(hand_boxes[2]*1.12)]
+
+                    ##保存图像
                     #cv2.imwrite("./crop_imgs/hand_data_crop/" + img[:-4] + f"_{i}.jpg", crop_image)
-                    # cv2.rectangle(im1, (int(hand_boxes[0]/1.2), int(hand_boxes[1]/1.2)), (int(hand_boxes[2]*1.12), int(hand_boxes[3]*1.12)), (0, 255, 0), 2)
-                    # with open('./hand_data_boxes.txt', 'a') as f1:
-                    #     f1.write(imgpath[:-4]+f"_{i}"+' '+str(np.round(np.copy(hand_boxes[0])/1.2,2))+' '+str(np.round(np.copy(hand_boxes[1])/1.2,2))+' '+str(np.round(np.copy(hand_boxes[2])*1.12,2))+' '+str(np.round(np.copy(hand_boxes[3])*1.12,2))+'\n')#call_phone
-                    area = [int(hand_boxes[0]), int(hand_boxes[1]), int(hand_boxes[2]), int(hand_boxes[3])]
+                    
+
+                    area = [int(hand_boxes[0]), int(hand_boxes[1]), int(hand_boxes[2]), int(hand_boxes[3])]#原始裁剪区域坐标x1 y1 x2 y2
                     #area = [int(hand_boxes[0]/1.2), int(hand_boxes[1]/1.12), int(hand_boxes[2]*1.12), int(hand_boxes[3]*1.12)]
                     #area = [int(hand_boxes[0]/1.2), int(hand_boxes[1]/1.2), int(hand_boxes[2]*1.12), int(hand_boxes[3]*1.12)]
-                    # cv2.imshow("im1",im1)
-                    # cv2.waitKey(0)
-                    # cv2.destroyAllWindows()
-
-                # print(area)
-                # print((area[0]*ratio1, area[1]*ratio1), (area[2]*ratio1, area[3]*ratio1))
+                    
+                    
+                # #在缩放后的图片上画原始目标区域框
                 # cv2.rectangle(im1, (area[0], area[1]), (area[2], area[3]), (255, 0, 255), 2)
-                # cv2.imshow("im1",im1)
-                # #cv2.waitKey(0)
-                # #exit(0)
-                # print(im0.shape)
-                # print(im1.shape)
+                # cv2.imwrite("./test_imgs/hand_data2/small_size/" + img[:-4] + f"_{i}.jpg", im1)
+                
+             
 
+                #将缩放后目标框坐标转换到原始图像坐标系中
                 xmin_ratio=ratio_w*area[0]
                 xmax_ratio=ratio_w*area[2]
                 ymin_ratio=ratio_h*area[1]
                 ymax_ratio=ratio_h*area[3]
 
+                #在原始图片上画原始目标区域框
                 cv2.rectangle(im0, (int(xmin_ratio), int(ymin_ratio)), (int(xmax_ratio), int(ymax_ratio)), (255, 0, 0), 2)
-                # cv2.imshow("im0",im0)
-                # cv2.waitKey(0)
+                
                 
                 area_large = [int(xmin_ratio), int(ymin_ratio), int(xmax_ratio), int(ymax_ratio)]#扩充后区域
-                crop_image_ = cv2.cvtColor(crop_image, cv2.COLOR_BGR2GRAY)#添加单通道
+                crop_image_ = cv2.cvtColor(crop_image, cv2.COLOR_BGR2GRAY)#更改图像为单通道，用于单通道模型
                
         #----------------------------------------------------------------------------------------------------------
                 if self.transforms:
