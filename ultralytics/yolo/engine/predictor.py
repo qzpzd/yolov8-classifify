@@ -71,6 +71,7 @@ class BasePredictor:
             overrides (dict, optional): Configuration overrides. Defaults to None.
         """
         self.args = get_cfg(cfg, overrides)
+        #print(self.args)
         project = self.args.project or Path(SETTINGS['runs_dir']) / self.args.task
         name = self.args.name or f"{self.args.mode}"
         self.save_dir = increment_path(Path(project) / name, exist_ok=self.args.exist_ok)
@@ -135,6 +136,7 @@ class BasePredictor:
         self.source_type = self.dataset.source_type
         self.vid_path, self.vid_writer = [None] * self.dataset.bs, [None] * self.dataset.bs
 
+
     def stream_inference(self, source=None, model=None):
         self.run_callbacks("on_predict_start")
         if self.args.verbose:
@@ -151,19 +153,26 @@ class BasePredictor:
             (self.save_dir / 'labels' if self.args.save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)
         # warmup model
         if not self.done_warmup:
-            self.model.warmup(imgsz=(1 if self.model.pt or self.model.triton else self.dataset.bs, 3, *self.imgsz))
+            #self.model.warmup(imgsz=(1 if self.model.pt or self.model.triton else self.dataset.bs, 3, *self.imgsz))
+            self.model.warmup(imgsz=(1 if self.model.pt or self.model.triton else self.dataset.bs, 1, *self.imgsz))#单通道
             self.done_warmup = True
 
         self.seen, self.windows, self.dt, self.batch = 0, [], (ops.Profile(), ops.Profile(), ops.Profile()), None
         for batch in self.dataset:
             self.run_callbacks("on_predict_batch_start")
             self.batch = batch
-            path, im, im0s, vid_cap, s = batch
+            #path, im, im0s, vid_cap, s = batch
+            #path, im, im0s, im0_, area, vid_cap, s = batch #添加人脸框
+           
+            path, im, im0s, area_large, vid_cap, s = batch #add hand_detection
+            
             visualize = increment_path(self.save_dir / Path(path).stem, mkdir=True) if self.args.visualize else False
+            
             with self.dt[0]:
                 im = self.preprocess(im)
                 if len(im.shape) == 3:
                     im = im[None]  # expand for batch dim
+
 
             # Inference
             with self.dt[1]:
@@ -177,13 +186,19 @@ class BasePredictor:
                 p = Path(p)
 
                 if self.args.verbose or self.args.save or self.args.save_txt or self.args.show:
-                    s += self.write_results(i, self.results, (p, im, im0))
+                    #s += self.write_results(i, self.results, (p, im, im0))
+                    s += self.write_results(i, self.results, (p, im, im0, area_large))
 
                 if self.args.show:
+                    
                     self.show(p)
+                    #self.show(p, im0_, area)#添加人脸框
+                    #self.show(p, im0_, area)#add head_detection
 
                 if self.args.save:
                     self.save_preds(vid_cap, i, str(self.save_dir / p.name))
+                    #self.save_preds(vid_cap, i, im0_, area, str(self.save_dir / p.name))#添加人脸框
+                    #self.save_preds(vid_cap, i, im0_, area, str(self.save_dir / p.name))#add head_detection
 
             self.run_callbacks("on_predict_batch_end")
             yield from self.results
@@ -199,8 +214,10 @@ class BasePredictor:
         # Print results
         if self.args.verbose and self.seen:
             t = tuple(x.t / self.seen * 1E3 for x in self.dt)  # speeds per image
+            # LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms postprocess per image at shape '
+            #             f'{(1, 3, *self.imgsz)}' % t)
             LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms postprocess per image at shape '
-                        f'{(1, 3, *self.imgsz)}' % t)
+                        f'{(1, 1, *self.imgsz)}' % t)#添加单通道
         if self.args.save_txt or self.args.save:
             nl = len(list(self.save_dir.glob('labels/*.txt')))  # number of labels
             s = f"\n{nl} label{'s' * (nl > 1)} saved to {self.save_dir / 'labels'}" if self.args.save_txt else ''
@@ -217,16 +234,25 @@ class BasePredictor:
         self.model.eval()
 
     def show(self, p):
+        #for i in range(len(area)):
         im0 = self.annotator.result()
+        
         if platform.system() == 'Linux' and p not in self.windows:
             self.windows.append(p)
             cv2.namedWindow(str(p), cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)  # allow window resize (Linux)
             cv2.resizeWindow(str(p), im0.shape[1], im0.shape[0])
         cv2.imshow(str(p), im0)
-        cv2.waitKey(500 if self.batch[4].startswith('image') else 1)  # 1 millisecond
+        cv2.waitKey(0 if self.batch[5].startswith('image') else 1)  # 1 millisecond
+        #cv2.waitKey(0 if self.batch[4].startswith('image') else 1)
+        cv2.destroyAllWindows()
 
+
+    #def save_preds(self, vid_cap, idx, im0_, area, save_path):
     def save_preds(self, vid_cap, idx, save_path):
+        #for i in range(len(area)):
+        #print(im0_.shape,im0.shape)
         im0 = self.annotator.result()
+       
         # save imgs
         if self.dataset.mode == 'image':
             cv2.imwrite(save_path, im0)

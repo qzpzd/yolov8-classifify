@@ -1,5 +1,5 @@
 # Ultralytics YOLO 🚀, GPL-3.0 license
-
+import caffe
 import torch
 
 from ultralytics.yolo.engine.predictor import BasePredictor

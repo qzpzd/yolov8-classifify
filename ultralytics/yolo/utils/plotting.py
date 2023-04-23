@@ -42,14 +42,20 @@ colors = Colors()  # create instance for 'from utils.plots import colors'
 
 class Annotator:
     # YOLOv8 Annotator for train/val mosaics and jpgs and detect/hub inference annotations
-    def __init__(self, im, line_width=None, font_size=None, font='Arial.ttf', pil=False, example='abc'):
+    def __init__(self, im, area_large, line_width=None, font_size=None, font='Arial.ttf', pil=False, example='abc'):
         assert im.data.contiguous, 'Image not contiguous. Apply np.ascontiguousarray(im) to Annotator() input images.'
         non_ascii = not is_ascii(example)  # non-latin labels, i.e. asian, arabic, cyrillic
         self.pil = pil or non_ascii
+        self.area_large =area_large 
         if self.pil:  # use PIL
             self.pil_9_2_0_check = check_version(pil_version, '9.2.0')  # deprecation check
+            im_crop = im[self.area_large[0]:self.area_large[2],self.area_large[1]:self.area_large[3]]
             self.im = im if isinstance(im, Image.Image) else Image.fromarray(im)
             self.draw = ImageDraw.Draw(self.im)
+
+
+            self.im_crop = im_crop if isinstance(im_crop, Image.Image) else Image.fromarray(im_crop)
+            self.draw1 = ImageDraw.Draw(self.im_crop)
             try:
                 font = check_font('Arial.Unicode.ttf' if non_ascii else font)
                 size = font_size or max(round(sum(self.im.size) / 2 * 0.035), 12)
@@ -95,6 +101,9 @@ class Annotator:
                             txt_color,
                             thickness=tf,
                             lineType=cv2.LINE_AA)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
+
 
     def masks(self, masks, colors, im_gpu, alpha=0.5, retina_masks=False):
         """Plot masks at once.
@@ -136,6 +145,7 @@ class Annotator:
         if anchor == 'bottom':  # start y from font bottom
             w, h = self.font.getsize(text)  # text width, height
             xy[1] += 1 - h
+        #self.draw.text(xy, text, fill=txt_color, font=self.font)
         self.draw.text(xy, text, fill=txt_color, font=self.font)
 
     def fromarray(self, im):
@@ -144,7 +154,7 @@ class Annotator:
         self.draw = ImageDraw.Draw(self.im)
 
     def result(self):
-        # Return annotated image as array
+       
         return np.asarray(self.im)
 
 

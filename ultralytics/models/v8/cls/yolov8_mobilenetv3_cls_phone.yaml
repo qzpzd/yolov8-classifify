@@ -1,0 +1,30 @@
+# Ultralytics YOLO 🚀, GPL-3.0 license
+
+# Parameters
+nc: 5  # number of classes
+#depth_multiple: 0.33  # scales module repeats
+#width_multiple: 0.25  # scales convolution channels
+
+depth_multiple: 1.0  # model depth multiple
+width_multiple: 1.0  # layer channel multiple
+
+# YOLOv8.0n backbone
+backbone:
+  # [from, repeats, module, args]
+   [[-1, 1, conv_bn_hswish, [16, 2]],                 # 0-p1/2
+   [-1, 1, MobileNet_Block, [16,  16, 3, 2, 1, 0]],  # 1-p2/4
+   [-1, 1, MobileNet_Block, [24,  72, 3, 2, 0, 0]],  # 2-p3/8
+   [-1, 1, MobileNet_Block, [24,  88, 3, 1, 0, 0]],  # 3-p3/8
+   [-1, 1, MobileNet_Block, [40,  96, 5, 2, 1, 1]],  # 4-p4/16
+   [-1, 1, MobileNet_Block, [40, 240, 5, 1, 1, 1]],  # 5-p4/16
+   [-1, 1, MobileNet_Block, [40, 240, 5, 1, 1, 1]],  # 6-p4/16
+   [-1, 1, MobileNet_Block, [48, 120, 5, 1, 1, 1]],  # 7-p4/16
+   [-1, 1, MobileNet_Block, [48, 144, 5, 1, 1, 1]],  # 8-p4/16
+   [-1, 1, MobileNet_Block, [96, 288, 5, 2, 1, 1]],  # 9-p5/32
+   [-1, 1, MobileNet_Block, [96, 576, 5, 1, 1, 1]],  # 10-p5/32
+   [-1, 1, MobileNet_Block, [96, 576, 5, 1, 1, 1]],  # 11-p5/32
+   ]
+
+# YOLOv8.0n head
+head:
+  - [-1, 1, Classify, [nc]]

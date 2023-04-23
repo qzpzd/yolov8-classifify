@@ -217,9 +217,26 @@ class ClassificationDataset(torchvision.datasets.ImageFolder):
         else:  # read image
             im = cv2.imread(f)  # BGR
         if self.album_transforms:
-            sample = self.album_transforms(image=cv2.cvtColor(im, cv2.COLOR_BGR2RGB))["image"]
+            #image=cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+            #sample = self.album_transforms(image=cv2.cvtColor(im, cv2.COLOR_BGR2GRAY))["image"]
+           
+            sample = self.album_transforms(image=cv2.cvtColor(im, cv2.COLOR_BGR2RGB))["image"]#源代码
         else:
-            sample = self.torch_transforms(im)
+            #修改为单通道
+            import numpy as np
+            image=cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+            sample = self.torch_transforms(image)
+            #sample = np.array(sample)[  :, :, np.newaxis]
+            
+
+
+            
+            
+
+            #sample = self.torch_transforms(im)#原代码
+            
+        
+
         return {'img': sample, 'cls': j}
 
     def __len__(self) -> int:

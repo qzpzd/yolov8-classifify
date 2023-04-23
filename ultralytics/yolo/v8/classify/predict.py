@@ -6,12 +6,13 @@ from ultralytics.yolo.engine.predictor import BasePredictor
 from ultralytics.yolo.engine.results import Results
 from ultralytics.yolo.utils import DEFAULT_CFG, ROOT
 from ultralytics.yolo.utils.plotting import Annotator
-
+import cv2
+import numpy as np
 
 class ClassificationPredictor(BasePredictor):
 
-    def get_annotator(self, img):
-        return Annotator(img, example=str(self.model.names), pil=True)
+    def get_annotator(self, img, area_large):
+        return Annotator(img, area_large, example=str(self.model.names), pil=True)
 
     def preprocess(self, img):
         img = (img if isinstance(img, torch.Tensor) else torch.Tensor(img)).to(self.model.device)
@@ -26,7 +27,8 @@ class ClassificationPredictor(BasePredictor):
         return results
 
     def write_results(self, idx, results, batch):
-        p, im, im0 = batch
+        #p, im, im0 = batch
+        p, im, im0, area_large = batch#添加检测框区域
         log_string = ""
         if len(im.shape) == 3:
             im = im[None]  # expand for batch dim
@@ -42,20 +44,23 @@ class ClassificationPredictor(BasePredictor):
         # save_path = str(self.save_dir / p.name)  # im.jpg
         self.txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')
         log_string += '%gx%g ' % im.shape[2:]  # print string
-        self.annotator = self.get_annotator(im0)
-
+        #self.annotator = self.get_annotator(im0)
+        self.annotator = self.get_annotator(im0, area_large)#添加检测框区域
+       
         result = results[idx]
         if len(result) == 0:
             return log_string
         prob = result.probs
         # Print results
-        top5i = prob.argsort(0, descending=True)[:5].tolist()  # top 5 indices
+        #top5i = prob.argsort(0, descending=True)[:5].tolist()  # top 5 indices
+        top5i = prob.argsort(0, descending=True)[:1].tolist()  # top 1 indices#更改text的输出个数
         log_string += f"{', '.join(f'{self.model.names[j]} {prob[j]:.2f}' for j in top5i)}, "
 
         # write
         text = '\n'.join(f'{prob[j]:.2f} {self.model.names[j]}' for j in top5i)
         if self.args.save or self.args.show:  # Add bbox to image
-            self.annotator.text((32, 32), text, txt_color=(255, 255, 255))
+            #self.annotator.text((32, 32), text, txt_color=(255, 255, 255))
+            self.annotator.text((area_large[0], area_large[1]), text, txt_color=(0, 0, 255))#更改text位置，按照检测框书写
         if self.args.save_txt:  # Write to file
             with open(f'{self.txt_path}.txt', 'a') as f:
                 f.write(text + '\n')
@@ -65,6 +70,7 @@ class ClassificationPredictor(BasePredictor):
 
 def predict(cfg=DEFAULT_CFG, use_python=False):
     model = cfg.model or "yolov8n-cls.pt"  # or "resnet18"
+    #print(cfg.model)
     source = cfg.source if cfg.source is not None else ROOT / "assets" if (ROOT / "assets").exists() \
         else "https://ultralytics.com/images/bus.jpg"
 

@@ -48,7 +48,7 @@ class ClassificationValidator(BaseValidator):
 def val(cfg=DEFAULT_CFG, use_python=False):
     model = cfg.model or "yolov8n-cls.pt"  # or "resnet18"
     data = cfg.data or "mnist160"
-
+    print(cfg.model)
     args = dict(model=model, data=data)
     if use_python:
         from ultralytics import YOLO

@@ -24,8 +24,10 @@ VID_FORMATS = "asf", "avi", "gif", "m4v", "mkv", "mov", "mp4", "mpeg", "mpg", "t
 LOCAL_RANK = int(os.getenv("LOCAL_RANK", -1))  # https://pytorch.org/docs/stable/elastic/run.html
 RANK = int(os.getenv('RANK', -1))
 PIN_MEMORY = str(os.getenv("PIN_MEMORY", True)).lower() == "true"  # global pin_memory for dataloaders
-IMAGENET_MEAN = 0.485, 0.456, 0.406  # RGB mean
-IMAGENET_STD = 0.229, 0.224, 0.225  # RGB standard deviation
+#IMAGENET_MEAN = 0.485, 0.456, 0.406  # RGB mean
+IMAGENET_MEAN = (0.485+0.456+0.406)/3  # RGB mean
+#IMAGENET_STD = 0.229, 0.224, 0.225  # RGB standard deviation
+IMAGENET_STD = (0.229+0.224+0.225)/3  # RGB standard deviation
 
 # Get orientation exif tag
 for orientation in ExifTags.TAGS.keys():
@@ -289,4 +291,5 @@ def check_cls_dataset(dataset: str):
     nc = len([x for x in (data_dir / 'train').glob('*') if x.is_dir()])  # number of classes
     names = [x.name for x in (data_dir / 'train').iterdir() if x.is_dir()]  # class names list
     names = dict(enumerate(sorted(names)))
+
     return {"train": train_set, "val": test_set, "nc": nc, "names": names}

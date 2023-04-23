@@ -10,7 +10,7 @@ import torch.nn as nn
 
 from ultralytics.nn.modules import (C1, C2, C3, C3TR, SPP, SPPF, Bottleneck, BottleneckCSP, C2f, C3Ghost, C3x, Classify,
                                     Concat, Conv, ConvTranspose, Detect, DWConv, DWConvTranspose2d, Ensemble, Focus,
-                                    GhostBottleneck, GhostConv, Segment)
+                                    GhostBottleneck, GhostConv, Segment, h_sigmoid, h_swish, SELayer, conv_bn_hswish, MobileNet_Block)
 from ultralytics.yolo.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, colorstr, yaml_load
 from ultralytics.yolo.utils.checks import check_requirements, check_yaml
 from ultralytics.yolo.utils.torch_utils import (fuse_conv_and_bn, fuse_deconv_and_bn, initialize_weights,
@@ -253,7 +253,7 @@ class ClassificationModel(BaseModel):
     def __init__(self,
                  cfg=None,
                  model=None,
-                 ch=3,
+                 ch=1,
                  nc=1000,
                  cutoff=10,
                  verbose=True):  # yaml, model, channels, number of classes, cutoff index, verbose flag
@@ -388,10 +388,34 @@ def attempt_load_weights(weights, device=None, inplace=True, fuse=False):
 
 def attempt_load_one_weight(weight, device=None, inplace=True, fuse=False):
     # Loads a single model weights
+    
     ckpt = torch_safe_load(weight)  # load ckpt
     args = {**DEFAULT_CFG_DICT, **ckpt['train_args']}  # combine model and default args, preferring model args
     model = (ckpt.get('ema') or ckpt['model']).to(device).float()  # FP32 model
 
+    # ##########################change_nc###################################
+    # #方法一：
+    nc = 5
+    #ch = 512 #yolov8s-cls
+    ch = 256 #yolov8n-cls
+    #修改输入通道数
+    print("#############################################old_model###############################################")
+    print(model)
+    model.model[0].conv.in_channels = 1
+    model.model[0].conv.weight = torch.nn.Parameter(model.model[0].conv.weight[:, :1, :, :])
+    #model.model[0].conv.weight.data = model.model[0].conv.weight.data[:, :1, :, :]
+
+    #修改模型修后一层输出通道数
+    m = model.model[-1]  # last layer
+    #ch = m.conv.in_channels if hasattr(m, 'conv') else m.cv1.conv.in_channels  # ch into module
+    c = Classify(ch, nc)  # Classify()
+    c.i, c.f, c.type = m.i, m.f, 'models.common.Classify'  # index, from, type
+    model.model[-1] = c  # replace
+    print("###########################new_model###########################################################")
+    print(model.model[0])
+    print(model.model[-2:])
+    print(model.model[0].conv.weight.data.shape)
+    #######################################################################
     # Model compatibility updates
     model.args = {k: v for k, v in args.items() if k in DEFAULT_CFG_KEYS}  # attach args to model
     model.pt_path = weight  # attach *.pt file path to model
@@ -433,7 +457,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         n = n_ = max(round(n * gd), 1) if n > 1 else n  # depth gain
         if m in {
                 Classify, Conv, ConvTranspose, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, DWConv, Focus,
-                BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x}:
+                BottleneckCSP, C1, C2, C2f, C3, C3TR, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, h_sigmoid, h_swish, SELayer, conv_bn_hswish, MobileNet_Block}:
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(c2 * gw, 8)
